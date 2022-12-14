@@ -1,0 +1,45 @@
+participant "Пользователь\n(браузер)" as user
+participant "web сервер" as web
+participant "Lenta_BD" as lbd
+activate user
+user -> web: запрос перечня мероприятий (период)
+activate web
+web --> user: перечень мероприятий
+user -> web: мероприятие
+web --> user:схема зала
+user -> web:сектор
+web->lbd: запрос статуса и стоимости мест \n(мероприятие)
+activate lbd
+lbd --> web:статус, стимость мест
+deactivate lbd
+web --> user: схема сектора
+note right
+цветовое обозаначение стоимостных категорий
+и статуса занят/свободен, легенда
+end note
+loop упешный выбор / отказ от выбора
+ user -> web:выбор мест
+ web->lbd ++: запрос подтверждения доступности \n(мероприятие, цена)
+ alt места доступны
+     lbd->lbd: бронирование
+     lbd-->web: подтверждение доступности
+ else места недоступны
+     lbd-->web --: отказ
+     web ->x user
+ end    
+end    
+web -> user: запрос оплаты
+user -> web:оплата
+ref over user, web: Payment process
+alt Оплата успешна
+    web -> lbd++: подтверждение покупки
+    lbd -> lbd: перевод \nв статус занято
+    lbd --> web--: подтверждение
+    web->user: подтверждение покупки \nформирование билетов
+else оплата неуспешна
+    web-> user: отмена
+    web -> lbd ++: отмена заказа
+    lbd -> lbd: отмена брони
+    lbd --> web--: подтверждение
+    deactivate web
+end
